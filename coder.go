@@ -29,6 +29,7 @@ func init() {
 
 func createDroplet(client *godo.Client) {
     dropletName := "vscoding"
+    tags := []string{"coder"}
 
     createRequest := &godo.DropletCreateRequest {
         Name: dropletName,
@@ -37,6 +38,7 @@ func createDroplet(client *godo.Client) {
         Image: godo.DropletCreateImage {
             Slug: "ubuntu-14-04-x64",
         },
+        Tags: tags,
     }
 
     ctx := context.TODO()

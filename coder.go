@@ -11,11 +11,6 @@ import (
     "fmt"
 )
 
-const (
-    tag = "coder"
-    storageName = "coderStorage"
-)
-
 type TokenSource struct {
     AccessToken string
 }
@@ -34,15 +29,15 @@ func init() {
 }
 
 func createDroplet(client *godo.Client) *godo.Droplet {
-    dropletName := "vscoding"
+    tag := getFlag("REMOTELY_TAG")
     tags := []string{tag}
 
     createRequest := &godo.DropletCreateRequest {
-        Name: dropletName,
-        Region: "sfo2",
-        Size: "s-1vcpu-1gb",
+        Name: getFlag("REMOTELY_INSTANCE_NAME"),
+        Region: getFlag("REMOTELY_REGION"),
+        Size: getFlag("REMOTELY_INSTANCE_SIZE"),
         Image: godo.DropletCreateImage {
-            Slug: "ubuntu-14-04-x64",
+            Slug: getFlag("REMOTELY_IMAGE_NAME"),
         },
         Tags: tags,
         PrivateNetworking: true,
@@ -70,6 +65,7 @@ func createDroplet(client *godo.Client) *godo.Droplet {
 
 func deleteDroplet(client *godo.Client) {
     ctx := context.TODO()
+    tag := getFlag("REMOTELY_TAG")
 
     _, err := client.Droplets.DeleteByTag(ctx, tag)
 
@@ -82,7 +78,7 @@ func deleteDroplet(client *godo.Client) {
 
 func doesExist(client *godo.Client) bool {
     ctx := context.TODO()
-
+    tag := getFlag("REMOTELY_TAG")
     opt := &godo.ListOptions{}
 
     droplets, _, _ := client.Droplets.ListByTag(ctx, tag, opt)
@@ -94,18 +90,19 @@ func getBlockStorage(client *godo.Client) (*godo.Volume, bool) {
     ctx := context.TODO()
 
     fmt.Printf("Retrieving volume...\n")
-    volume := retrieveStorage(client, storageName)
+    volume := retrieveStorage(client, getFlag("REMOTELY_STORAGE_NAME"))
 
     if volume != nil {
         return volume, true
     }
 
     fmt.Printf("Creating volume...\n")
+    tag := getFlag("REMOTELY_TAG")
     tags := []string{tag}
 
     createRequest := &godo.VolumeCreateRequest {
         Region: "sfo2",
-        Name: storageName,
+        Name: getFlag("REMOTELY_STORAGE_NAME"),
         Description: "Storage for coder",
         Tags: tags,
         SizeGigaBytes: 25,
@@ -141,6 +138,19 @@ func retrieveStorage(client *godo.Client, storageName string) *godo.Volume {
         return nil
     }
 }
+
+func getFlag(name string) string {
+    flag, exists := os.LookupEnv(name)
+
+    if exists {
+        return flag
+    } else {
+        fmt.Printf("Please define %s in your .env file.\n\nExiting now.\n", name)
+        os.Exit(1)
+        return ""
+    }
+}
+
 
 func printError(err error) {
     fmt.Printf("Something went wrong: %s\n\n", err)

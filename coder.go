@@ -5,6 +5,7 @@ import (
     "github.com/digitalocean/godo"
     "github.com/joho/godotenv"
     "time"
+    "strconv"
     "golang.org/x/oauth2"
     "os"
     "log"
@@ -101,11 +102,11 @@ func getBlockStorage(client *godo.Client) (*godo.Volume, bool) {
     tags := []string{tag}
 
     createRequest := &godo.VolumeCreateRequest {
-        Region: "sfo2",
+        Region: getFlag("REMOTELY_REGION"),
         Name: getFlag("REMOTELY_STORAGE_NAME"),
         Description: "Storage for coder",
         Tags: tags,
-        SizeGigaBytes: 25,
+        SizeGigaBytes: getIntFlag("REMOTELY_STORAGE_SIZE"),
     }
 
     newVolume, _, volErr := client.Storage.CreateVolume(ctx, createRequest)
@@ -148,6 +149,20 @@ func getFlag(name string) string {
         fmt.Printf("Please define %s in your .env file.\n\nExiting now.\n", name)
         os.Exit(1)
         return ""
+    }
+}
+
+func getIntFlag(name string) int64 {
+    flag := getFlag(name)
+
+    val, err := strconv.ParseInt(flag, 10, 64)
+
+    if err == nil {
+        return val
+    } else {
+        fmt.Printf("Please define %s in your .env file as an integer.\n\nExiting now.\n", name)
+        os.Exit(1)
+        return 0
     }
 }
 

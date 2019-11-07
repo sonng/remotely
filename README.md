@@ -21,6 +21,7 @@ REMOTELY_REGION= # Region where these services will be created
 REMOTELY_INSTANCE_SIZE= # Size of the instance
 REMOTELY_IMAGE_NAME= # Name of the image that the instance will be created
 REMOTELY_INSTANCE_NAME= # Name of the droplet
+REMOTELY_STORAGE_SIZE= # Size of your storage
 ```
 
 An example of this might look something like;
@@ -33,4 +34,5 @@ REMOTELY_REGION=sfo2
 REMOTELY_INSTANCE_SIZE=s-1vcpu-1gb
 REMOTELY_IMAGE_NAME=ubuntu-14-04-x64
 REMOTELY_INSTANCE_NAME=vscoding
+REMOTELY_STORAGE_SIZE=25
 ```

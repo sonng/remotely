@@ -22,7 +22,8 @@ An example of this might look something like;
 DO_TOKEN=<your digital ocean token>
 REMOTELY_TAG=coder
 REMOTELY_STORAGE_NAME=coderStorage
-REMOTELY_REGION=sfo2REMOTELY_INSTANCE_SIZE=s-1vcpu-1gb
+REMOTELY_REGION=sfo2
+REMOTELY_INSTANCE_SIZE=s-1vcpu-1gb
 REMOTELY_IMAGE_NAME=ubuntu-14-04-x64
 REMOTELY_INSTANCE_NAME=vscoding
 ```

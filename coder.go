@@ -184,12 +184,14 @@ func main() {
         if volumeExists {
             retries := 0
             for retries < 3 {
+                fmt.Printf("Waiting for droplet to finish initialising...\n")
+                time.Sleep(20 * time.Second)
+                fmt.Printf("Attempting to attach block storage to droplet.\n")
                 success := attachBlockStorage(client, volume.ID, droplet.ID)
 
                 if success {
                     break
                 } else {
-                    time.Sleep(20 * time.Second)
                     retries += 1
                 }
             }

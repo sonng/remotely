@@ -1,6 +1,13 @@
 # remotely
 Scripts and Configurations for a remote development machine
 
+# Coder
+
+## Usage
+
+The script will see if there is an instance running, if there is, it'll destroy it. Otherwise it'll create a new instance.
+
+`go run coder.go`
 
 ## Configuration
 

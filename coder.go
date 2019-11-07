@@ -12,6 +12,7 @@ import (
 
 const (
     tag = "coder"
+    storageName = "coderStorage"
 )
 
 type TokenSource struct {
@@ -31,7 +32,7 @@ func init() {
     }
 }
 
-func createDroplet(client *godo.Client) {
+func createDroplet(client *godo.Client) *godo.Droplet {
     dropletName := "vscoding"
     tags := []string{tag}
 
@@ -60,8 +61,10 @@ func createDroplet(client *godo.Client) {
    if ipError == nil {
        fmt.Printf("It's Private IP is: %s\n", ip)
    } else {
-       fmt.Printf("Something bad happened: %s\n\n", ipError)
+       printError(ipError)
    }
+
+   return newDroplet
 }
 
 func deleteDroplet(client *godo.Client) {
@@ -70,7 +73,7 @@ func deleteDroplet(client *godo.Client) {
     _, err := client.Droplets.DeleteByTag(ctx, tag)
 
     if err != nil {
-        fmt.Printf("Something bad happened: %s\n\n", err)
+        printError(err)
     } else {
         fmt.Printf("Droplet has been deleted")
     }
@@ -84,6 +87,74 @@ func doesExist(client *godo.Client) bool {
     droplets, _, _ := client.Droplets.ListByTag(ctx, tag, opt)
 
     return len(droplets) > 0
+}
+
+func getBlockStorage(client *godo.Client) (*godo.Volume, bool) {
+    ctx := context.TODO()
+
+    fmt.Printf("Retrieving volume...\n")
+    volume := retrieveStorage(client, storageName)
+
+    if volume != nil {
+        return volume, true
+    }
+
+    fmt.Printf("Creating volume...\n")
+    tags := []string{tag}
+
+    createRequest := &godo.VolumeCreateRequest {
+        Region: "sfo2",
+        Name: storageName,
+        Description: "Storage for coder",
+        Tags: tags,
+        SizeGigaBytes: 25,
+    }
+
+    newVolume, _, volErr := client.Storage.CreateVolume(ctx, createRequest)
+
+    if volErr == nil {
+        return newVolume, true
+    }
+
+    printError(volErr)
+    return nil, false
+}
+
+func retrieveStorage(client *godo.Client, storageName string) *godo.Volume {
+    ctx := context.TODO()
+
+    params := &godo.ListVolumeParams {
+        Name: storageName,
+    }
+
+    volumes, _, err := client.Storage.ListVolumes(ctx, params)
+
+    if err != nil {
+        printError(err)
+        return nil
+    }
+
+    if len(volumes) > 0 {
+        return &volumes[0]
+    } else {
+        return nil
+    }
+}
+
+func printError(err error) {
+    fmt.Printf("Something went wrong: %s\n\n", err)
+}
+
+func attachBlockStorage(client *godo.Client, volumeID string, dropletID int) {
+    ctx := context.TODO()
+
+    _, _, err := client.StorageActions.Attach(ctx, volumeID, dropletID)
+
+    if err != nil {
+        fmt.Printf("Something bad happened with attaching the storage: %s\n\n", err)
+    } else {
+        fmt.Printf("Everything is good to go!")
+    }
 }
 
 func main() {
@@ -104,6 +175,13 @@ func main() {
     if doesExist(client) {
         deleteDroplet(client)
     } else {
-        createDroplet(client)
+        droplet := createDroplet(client)
+        volume, volumeExists := getBlockStorage(client)
+
+        if volumeExists {
+            attachBlockStorage(client, volume.ID, droplet.ID)
+        } else {
+            fmt.Printf("Something went bad with the volumes")
+        }
     }
 }

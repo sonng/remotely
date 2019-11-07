@@ -4,6 +4,7 @@ import (
     "context"
     "github.com/digitalocean/godo"
     "github.com/joho/godotenv"
+    "time"
     "golang.org/x/oauth2"
     "os"
     "log"
@@ -145,15 +146,17 @@ func printError(err error) {
     fmt.Printf("Something went wrong: %s\n\n", err)
 }
 
-func attachBlockStorage(client *godo.Client, volumeID string, dropletID int) {
+func attachBlockStorage(client *godo.Client, volumeID string, dropletID int) bool {
     ctx := context.TODO()
 
     _, _, err := client.StorageActions.Attach(ctx, volumeID, dropletID)
 
     if err != nil {
         fmt.Printf("Something bad happened with attaching the storage: %s\n\n", err)
+        return false
     } else {
         fmt.Printf("Everything is good to go!")
+        return true
     }
 }
 
@@ -179,7 +182,17 @@ func main() {
         volume, volumeExists := getBlockStorage(client)
 
         if volumeExists {
-            attachBlockStorage(client, volume.ID, droplet.ID)
+            retries := 0
+            for retries < 3 {
+                success := attachBlockStorage(client, volume.ID, droplet.ID)
+
+                if success {
+                    break
+                } else {
+                    time.Sleep(20 * time.Second)
+                    retries += 1
+                }
+            }
         } else {
             fmt.Printf("Something went bad with the volumes")
         }

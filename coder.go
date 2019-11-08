@@ -3,6 +3,9 @@ package main
 import (
     "context"
     "github.com/digitalocean/godo"
+    "crypto/rand"
+    "encoding/base64"
+    "math"
     "github.com/joho/godotenv"
     "time"
     "strconv"
@@ -29,9 +32,16 @@ func init() {
     }
 }
 
-func createDroplet(client *godo.Client) *godo.Droplet {
+func createDroplet(client *godo.Client, password string) *godo.Droplet {
     tag := getFlag("REMOTELY_TAG")
     tags := []string{tag}
+
+    echoString := fmt.Sprintf("  - echo %s > /etc/code-server/pass\n", password)
+
+    userData := "#cloud-config\n\n" +
+    "runcmd:\n" +
+    echoString +
+    "  - reboot\n"
 
     createRequest := &godo.DropletCreateRequest {
         Name: getFlag("REMOTELY_INSTANCE_NAME"),
@@ -42,6 +52,7 @@ func createDroplet(client *godo.Client) *godo.Droplet {
         },
         Tags: tags,
         PrivateNetworking: true,
+        UserData: userData,
     }
 
     ctx := context.TODO()
@@ -65,7 +76,7 @@ func deleteDroplet(client *godo.Client) {
     if err != nil {
         printError(err)
     } else {
-        fmt.Printf("Droplet has been deleted")
+        fmt.Printf("Droplet has been deleted\n")
     }
 }
 
@@ -180,6 +191,13 @@ func attachBlockStorage(client *godo.Client, volumeID string, dropletID int) boo
     }
 }
 
+func randomBase64String(l int) string {
+    buff := make([]byte, int(math.Round(float64(l)/float64(1.3333333))))
+    rand.Read(buff)
+    str := base64.RawURLEncoding.EncodeToString(buff)
+    return str[:l]
+}
+
 func main() {
     pat, exists := os.LookupEnv("DO_TOKEN")
 
@@ -199,7 +217,8 @@ func main() {
     if dExists {
         deleteDroplet(client)
     } else {
-        droplet := createDroplet(client)
+        password := randomBase64String(12)
+        droplet := createDroplet(client, password)
         volume, volumeExists := getBlockStorage(client)
 
         if volumeExists {
@@ -223,7 +242,8 @@ func main() {
                 droplet, _ := getDroplet(client)
                 ip, err := droplet.PublicIPv4()
                 if err == nil {
-                    fmt.Printf("It's Public IP is: %s\n", ip)
+                    fmt.Printf("Public IP is: %s\n", ip)
+                    fmt.Printf("Password: %s\n", password)
                 } else {
                     printError(err)
                 }

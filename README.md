@@ -13,6 +13,8 @@ The script will see if there is an instance running, if there is, it'll destroy 
 
 Place a `.env` file in the root of this project. It must contain the following in order to work properly.
 
+If you want to have visual studio code server, you must use `code-server-18-04` as your instance image name.
+
 ```
 DO_TOKEN= # Your DigitalOcean API Token
 REMOTELY_TAG= # A tag that groups these services together on Digital Ocean
@@ -32,7 +34,7 @@ REMOTELY_TAG=coder
 REMOTELY_STORAGE_NAME=coderStorage
 REMOTELY_REGION=sfo2
 REMOTELY_INSTANCE_SIZE=s-1vcpu-1gb
-REMOTELY_IMAGE_NAME=ubuntu-14-04-x64
+REMOTELY_IMAGE_NAME=code-server-18-04
 REMOTELY_INSTANCE_NAME=vscoding
 REMOTELY_STORAGE_SIZE=25
 ```

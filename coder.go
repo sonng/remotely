@@ -52,16 +52,8 @@ func createDroplet(client *godo.Client) *godo.Droplet {
         fmt.Printf("Something bad happened: %s\n\n", err)
     }
 
-   fmt.Printf("New Droplet Created: %s\n\n", newDroplet.Name)
-
-   ip, ipError := newDroplet.PrivateIPv4()
-   if ipError == nil {
-       fmt.Printf("It's Private IP is: %s\n", ip)
-   } else {
-       printError(ipError)
-   }
-
-   return newDroplet
+    fmt.Printf("New Droplet Created: %s\n\n", newDroplet.Name)
+    return newDroplet
 }
 
 func deleteDroplet(client *godo.Client) {
@@ -77,14 +69,18 @@ func deleteDroplet(client *godo.Client) {
     }
 }
 
-func doesExist(client *godo.Client) bool {
+func getDroplet(client *godo.Client) (*godo.Droplet, bool) {
     ctx := context.TODO()
     tag := getFlag("REMOTELY_TAG")
     opt := &godo.ListOptions{}
 
     droplets, _, _ := client.Droplets.ListByTag(ctx, tag, opt)
 
-    return len(droplets) > 0
+    if len(droplets) > 0 {
+        return &droplets[0], true
+    } else {
+        return nil, false
+    }
 }
 
 func getBlockStorage(client *godo.Client) (*godo.Volume, bool) {
@@ -166,7 +162,6 @@ func getIntFlag(name string) int64 {
     }
 }
 
-
 func printError(err error) {
     fmt.Printf("Something went wrong: %s\n\n", err)
 }
@@ -180,7 +175,7 @@ func attachBlockStorage(client *godo.Client, volumeID string, dropletID int) boo
         fmt.Printf("Something bad happened with attaching the storage: %s\n\n", err)
         return false
     } else {
-        fmt.Printf("Everything is good to go!")
+        fmt.Printf("Everything is good to go!\n\n")
         return true
     }
 }
@@ -199,8 +194,9 @@ func main() {
 
     oauthClient := oauth2.NewClient(context.Background(), tokenSource)
     client := godo.NewClient(oauthClient)
+    _, dExists := getDroplet(client)
 
-    if doesExist(client) {
+    if dExists {
         deleteDroplet(client)
     } else {
         droplet := createDroplet(client)
@@ -218,6 +214,18 @@ func main() {
                     break
                 } else {
                     retries += 1
+                }
+            }
+
+            if retries == 3 {
+                fmt.Printf("Please check your digital ocean account. Something went wrong.")
+            } else {
+                droplet, _ := getDroplet(client)
+                ip, err := droplet.PublicIPv4()
+                if err == nil {
+                    fmt.Printf("It's Public IP is: %s\n", ip)
+                } else {
+                    printError(err)
                 }
             }
         } else {
